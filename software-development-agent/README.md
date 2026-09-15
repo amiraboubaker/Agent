@@ -37,18 +37,26 @@ On macOS/Linux, activate the environment with `source .venv/bin/activate`.
 Edit `.env`:
 
 ```env
-LLM_API_URL=https://api.openai.com/v1/chat/completions
-LLM_API_KEY=your-server-side-key
-LLM_MODEL=gpt-4o-mini
+LLM_API_URL=http://localhost:11434/v1/chat/completions
+LLM_API_KEY=
+LLM_MODEL=llama3.2
 DATABASE_URL=sqlite:///./data/agent.db
 CORS_ORIGINS=http://localhost:5173
-LLM_ALLOWED_HOSTS=api.openai.com
+LLM_ALLOWED_HOSTS=localhost,127.0.0.1,api.openai.com
 RATE_LIMIT_PER_MINUTE=20
 ```
 
-`LLM_API_KEY` is optional for local offline mode. Never put it in frontend code or a `VITE_*` variable.
+The default local provider is Ollama, which runs on your computer and does not require an API key or credits. Install Ollama from <https://ollama.com>, then download the configured model:
 
-For GitHub Actions, add a repository secret named `LLM_API_KEY` under **Settings > Secrets and variables > Actions**. Pass it to the process that starts the backend instead of committing it to `.env`:
+```powershell
+ollama pull llama3.2
+```
+
+Start Ollama before starting the backend. Restart the backend after changing `.env` because settings are loaded at startup. Never put a cloud provider key in frontend code or a `VITE_*` variable.
+
+For Docker Desktop on Windows, Compose automatically changes the Ollama host to `host.docker.internal`, which lets the container reach Ollama running on the host.
+
+To use a remote OpenAI-compatible provider instead, set its HTTPS URL, model, and key in your local environment. For GitHub Actions, add a repository secret named `LLM_API_KEY` under **Settings > Secrets and variables > Actions** and pass it to the backend process:
 
 ```yaml
 env:
@@ -57,7 +65,7 @@ env:
 
 When using Docker Compose in that workflow, the backend receives the value through its environment. Do not write the secret to a file, include it in a Docker image, or print it in workflow logs. GitHub Secrets are available only inside Actions; a separately hosted production server must configure the same variable in its own secret manager.
 
-Set `APP_ENV=production` in production. Production startup fails if `LLM_API_KEY` is missing. `LLM_ALLOWED_HOSTS` limits outbound AI requests to approved HTTPS provider hosts, and `RATE_LIMIT_PER_MINUTE` limits chat requests per client IP.
+Set `APP_ENV=production` for a remote production provider. Production startup fails if `LLM_API_KEY` is missing. `LLM_ALLOWED_HOSTS` limits outbound AI requests to approved hosts, permits local Ollama over HTTP, and requires HTTPS for remote hosts. `RATE_LIMIT_PER_MINUTE` limits chat requests per client IP.
 
 ## Development
 

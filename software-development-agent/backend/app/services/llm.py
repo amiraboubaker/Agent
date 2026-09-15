@@ -15,7 +15,7 @@ class LLMService:
         self.settings = settings
 
     async def answer(self, message: str, task_type: TaskType, history: list[dict[str, str]]) -> str:
-        if not self.settings.llm_api_key:
+        if not self.settings.llm_api_key and not self.settings.is_local_llm:
             return self._fallback_answer(message, task_type)
         self.settings.validate_llm_url()
 
@@ -28,7 +28,9 @@ class LLMService:
             ],
             "temperature": 0.2,
         }
-        headers = {"Authorization": f"Bearer {self.settings.llm_api_key}"}
+        headers = {}
+        if self.settings.llm_api_key:
+            headers["Authorization"] = f"Bearer {self.settings.llm_api_key}"
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(self.settings.llm_api_url, json=payload, headers=headers)
             response.raise_for_status()
